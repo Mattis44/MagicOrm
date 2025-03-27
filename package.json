@@ -1,15 +1,27 @@
 {
-  "name": "MagicOrm",
-  "version": "1.0.0",
-  "main": "index.js",
-  "repository": "https://github.com/Mattis44/MagicOrm.git",
-  "author": "Mattis <96737931+Mattis44@users.noreply.github.com>",
-  "license": "MIT",
-  "dependencies": {
-    "sqlite3": "^5.1.7"
-  },
-  "devDependencies": {
-    "@types/sqlite3": "^5.1.0",
-    "typescript": "^5.8.2"
-  }
+    "name": "magicorm",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/Mattis44/MagicOrm.git",
+    "author": "Mattis <96737931+Mattis44@users.noreply.github.com>",
+    "license": "MIT",
+    "dependencies": {
+        "commander": "^13.1.0",
+        "dotenv": "^16.4.7",
+        "reflect-metadata": "^0.2.2",
+        "sqlite3": "^5.1.7"
+    },
+    "scripts": {
+        "dev": "nodemon --exec ts-node src/main.ts"
+    },
+    "devDependencies": {
+        "@types/sqlite3": "^5.1.0",
+        "nodemon": "^3.1.9",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.8.2"
+    },
+    "bin": {
+        "magicorm": "dist/bin/magicorm.js"
+    }
 }
