@@ -1,0 +1,15 @@
+{
+  "name": "MagicOrm",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/Mattis44/MagicOrm.git",
+  "author": "Mattis <96737931+Mattis44@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/sqlite3": "^5.1.0",
+    "typescript": "^5.8.2"
+  }
+}
