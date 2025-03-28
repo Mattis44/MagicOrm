@@ -14,7 +14,6 @@ export function initProject() {
             if (options.init) {
                 console.log("📂 Initialisation du projet MagicOrm...");
 
-                // Création des dossiers dans src
                 const folders = ["src", "src/entities", "src/migrations"];
 
                 folders.forEach((folder) => {
@@ -28,7 +27,6 @@ export function initProject() {
                     }
                 });
 
-                // Création du fichier magicorm.json dans src
                 const configPath = path.resolve(process.cwd(), "magicorm.json");
 
                 if (!fs.existsSync(configPath)) {
@@ -61,7 +59,7 @@ export class User {
     @PrimaryGeneratedColumn
     id: number;
 
-    @Column
+    @Column({ length: 50, nullable: false })
     name: string;
 
     constructor(id: number, name: string) {
