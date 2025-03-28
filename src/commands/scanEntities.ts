@@ -32,57 +32,33 @@ export function scanEntities() {
         );
     }
 
-    const pattern = config.entities[0];
-    const files = glob.sync(pattern, { cwd: process.cwd() });
+    config.entities.forEach((pattern: string) => {
+        const files = glob.sync(pattern, { cwd: process.cwd() });
 
-    console.log(`🔍 Recherche avec le pattern : ${pattern}`);
-    console.log(`📂 Répertoire courant : ${process.cwd()}`);
-    console.log(`📋 Fichiers trouvés :`, files);
+        console.log(`🔍 Recherche avec le pattern : ${pattern}`);
+        console.log(`📂 Répertoire courant : ${process.cwd()}`);
+        console.log(`📋 Fichiers trouvés :`, files);
 
-    files.forEach((file: string) => {
-        console.log(`📄 Chargement de : ${file}`);
-        const absolutePath = path.resolve(process.cwd(), file);
+        files.forEach((file: string) => {
+            console.log(`📄 Chargement de : ${file}`);
+            const absolutePath = path.resolve(process.cwd(), file);
 
-        import(absolutePath)
-            .then((module) => {
-                Object.values(module).forEach((entity: any) => {
-                    if (typeof entity === "function") {
-                        const columns = getEntityColumns(entity);
-                        console.log(`\n📌 Entité : ${entity.name}`);
-                        console.table(columns);
-                    }
+            import(absolutePath)
+                .then((module) => {
+                    Object.values(module).forEach((entity: any) => {
+                        if (typeof entity === "function") {
+                            const columns = getEntityColumns(entity);
+                            console.log(`\n📌 Entité : ${entity.name}`);
+                            console.table(columns);
+                        }
+                    });
+                })
+                .catch((err) => {
+                    console.error(
+                        `❌ Erreur lors de l'importation de ${file} :`,
+                        err
+                    );
                 });
-            })
-            .catch((err) => {
-                console.error(
-                    `❌ Erreur lors de l'importation de ${file} :`,
-                    err
-                );
-            });
+        });
     });
-
-    // config.entities.forEach((pattern: string) => {
-    //     console.log(`🔎 Recherche des entités dans ${pattern} ...`);
-    //     glob.sync(path.resolve(process.cwd(), pattern)).forEach(
-    //         (file: string) => {
-    //             console.log(`📄 Chargement de : ${file}`);
-    //             import(file)
-    //                 .then((module) => {
-    //                     Object.values(module).forEach((entity: any) => {
-    //                         if (typeof entity === "function") {
-    //                             const columns = getEntityColumns(entity);
-    //                             console.log(`\n📌 Entité : ${entity.name}`);
-    //                             console.table(columns);
-    //                         }
-    //                     });
-    //                 })
-    //                 .catch((err) => {
-    //                     console.error(
-    //                         `❌ Erreur lors de l'importation de ${file} :`,
-    //                         err
-    //                     );
-    //                 });
-    //         }
-    //     );
-    // });
 }
