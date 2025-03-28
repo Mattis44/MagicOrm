@@ -1,7 +1,27 @@
-import { ColumnOptions } from "src/types/ColumnOptions";
+import { ColumnOptions } from "../types/ColumnOptions";
 
 export function getEntityColumns(target: Function) {
-    return Reflect.getMetadata("columns", target.prototype) || [];
+    const columns = Reflect.getMetadata("columns", target.prototype) || [];
+    const primaryKeyGeneratedColumn = Reflect.getMetadata("PrimaryGeneratedColumn", target.prototype);
+    if (primaryKeyGeneratedColumn) {
+        const primaryKeyColumn = columns.find((column: any) => column.name === primaryKeyGeneratedColumn);
+        if (primaryKeyColumn) {
+            primaryKeyColumn.primary = true;
+            primaryKeyColumn.generated = true;
+        }
+    }
+    return columns.map((column: any) => {
+        return {
+            name: column.name,
+            type: column.type,
+            length: column.length,
+            nullable: column.nullable,
+            unique: column.unique,
+            primary: column.primary || false,
+            generated: column.generated || false,
+            default: column.default
+        };
+    });
 }
 
 export function Entity(target: Function) {

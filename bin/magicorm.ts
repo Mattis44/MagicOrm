@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-import { initProject } from '../src/init';
+import { cli } from "../src/commands/cli";
 
-initProject();
+cli();
