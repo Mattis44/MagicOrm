@@ -49,7 +49,7 @@ export function scanEntities() {
                         if (typeof entity === "function") {
                             const columns = getEntityColumns(entity);
                             console.log(`\n📌 Entité : ${entity.name}`);
-                            console.table(columns);
+                            console.log(columns);
                         }
                     });
                 })
