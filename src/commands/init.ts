@@ -25,7 +25,10 @@ export function initProject() {
                 path: "database.db",
             },
             entities: ["dist/entities/**/*.js"],
-            migrations: ["dist/migrations/**/*.js"],
+            migrations: {
+                readAt: "dist/migrations/**/*.js",
+                saveAt: "src/migrations/",
+            },
         };
 
         fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));

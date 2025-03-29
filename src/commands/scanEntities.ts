@@ -1,18 +1,11 @@
 import path from "path";
 import fs from "fs";
-import { getEntityColumns } from "../lib/decorators";
 import { glob } from "glob";
+import InitError from "../classes/InitError";
+import { Entity } from "src/types/Entity";
+import * as migrationUtils from "../utils/migrationUtils";
 
-class InitError extends Error {
-    constructor(message: string) {
-        super(
-            `${message}, veuillez exécuter la commande "yarn magicorm init" pour initialiser le projet.`
-        );
-        this.name = "InitError";
-    }
-}
-
-export function scanEntities() {
+export async function scanEntities() {
     const configPath = path.resolve(process.cwd(), "magicorm.json");
 
     if (!fs.existsSync(configPath)) {
@@ -32,33 +25,17 @@ export function scanEntities() {
         );
     }
 
-    config.entities.forEach((pattern: string) => {
+    for (const pattern of config.entities) {
         const files = glob.sync(pattern, { cwd: process.cwd() });
 
         console.log(`🔍 Recherche avec le pattern : ${pattern}`);
         console.log(`📂 Répertoire courant : ${process.cwd()}`);
         console.log(`📋 Fichiers trouvés :`, files);
 
-        files.forEach((file: string) => {
-            console.log(`📄 Chargement de : ${file}`);
-            const absolutePath = path.resolve(process.cwd(), file);
-
-            import(absolutePath)
-                .then((module) => {
-                    Object.values(module).forEach((entity: any) => {
-                        if (typeof entity === "function") {
-                            const columns = getEntityColumns(entity);
-                            console.log(`\n📌 Entité : ${entity.name}`);
-                            console.log(columns);
-                        }
-                    });
-                })
-                .catch((err) => {
-                    console.error(
-                        `❌ Erreur lors de l'importation de ${file} :`,
-                        err
-                    );
-                });
+        const entities = await migrationUtils.getAllEntities(files);
+        entities.forEach((entity: Entity) => {
+            console.log(`📋 Entité : ${entity.name}`);
+            console.log("Colonnes : ", entity.columns);
         });
-    });
+    }
 }
