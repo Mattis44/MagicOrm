@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { initProject } from "./init";
-import { createMigration } from "./migration";
+import { createMigration, runMigration } from "./migration";
 import { scanEntities } from "./scanEntities";
 
 export function cli() {
@@ -29,8 +29,12 @@ export function cli() {
         .description(
             "Crée une migration basée sur les entités définies dans magicorm.json"
         )
-        .action(() => {
-            createMigration();
+        .option("-r, --run", "Exécute la migration")
+        .action((o) => {
+            if (!o.run) {
+                createMigration();
+            }
+            runMigration();
         });
 
     program.parse(process.argv);
