@@ -1,51 +1,64 @@
+import MagicRunner from "../classes/MagicRunner";
 import { Entity } from "../types/Entity";
 
-export const migrationTemplate = (entities: Entity[]) => {
+const getColumnsFromDb = async (table: string): Promise<string[]> => {
+    const db = MagicRunner.getInstance();
+    const query = await db.query(`PRAGMA table_info("${table}")`);
+    return query.map((column: any) => column.name);
+};
+
+const getNewColumns = async (entity: Entity, table: string) => {
+    const existingColumns = await getColumnsFromDb(table);
+    return entity.columns.filter(
+        (column) => !existingColumns.includes(column.name)
+    );
+};
+
+export const migrationTemplate = async (entities: Entity[]) => {
     const timestamp = new Date().toISOString().replace(/[-T:.Z]/g, "");
     const className = `Version${timestamp}`;
+
+    const newColumnsByTable = await Promise.all(
+        entities.map(async (entity) => ({
+            tableName: entity.name.toLowerCase(),
+            newColumns: await getNewColumns(entity, entity.name.toLowerCase()),
+        }))
+    );
 
     let upQueries = "";
     let downQueries = "";
 
-    for (const entity of entities) {
-        const tableName = entity.name.toLowerCase();
-        const columnsToSql = entity.columns
-            .map((column) => {
-                let columnSql = `${column.name} ${column.type}`;
+    for (const { tableName, newColumns } of newColumnsByTable) {
+        if (newColumns.length === 0) continue;
 
-                if (column.primary) {
-                    columnSql += " PRIMARY KEY";
-                    if (column.generated) {
-                        columnSql += " AUTOINCREMENT";
-                    }
-                }
+        for (const column of newColumns) {
+            let columnSql = `${column.name} ${column.type}`;
 
-                if (column.unique) {
-                    columnSql += " UNIQUE";
-                }
+            if (column.primary) {
+                columnSql += " PRIMARY KEY";
+                if (column.generated) columnSql += " AUTOINCREMENT";
+            }
+            if (column.unique) columnSql += " UNIQUE";
+            if (column.nullable === false) columnSql += " NOT NULL";
+            if (column.default) columnSql += ` DEFAULT ${column.default}`;
 
-                if (column.nullable === false) {
-                    columnSql += " NOT NULL";
-                }
-
-                if (column.default) {
-                    columnSql += ` DEFAULT ${column.default}`;
-                }
-                return columnSql;
-            })
-            .join(",\n ");
-
-        upQueries += `
-        await queryRunner.query(\`
-            CREATE TABLE IF NOT EXISTS "${tableName}" (
-                ${columnsToSql}
-            )
-        \`);\n`;
+            upQueries += `
+            await queryRunner.query(\`
+                ALTER TABLE "${tableName}" ADD COLUMN ${columnSql}
+            \`);\n`;
+        }
 
         downQueries += `
+        const existingColumns = await queryRunner.query(\`PRAGMA table_info("${tableName}")\`);
+        const originalColumns = existingColumns.filter((col: { name: string }) => ["id", "name"].includes(col.name));
+        const columnsToKeep = originalColumns.map((col: { name: string }) => col.name);
+
         await queryRunner.query(\`
-            DROP TABLE IF EXISTS "${tableName}"
-        \`);\n`;
+            CREATE TABLE "${tableName}_tmp" AS SELECT \${columnsToKeep.join(", ")} FROM "${tableName}";
+        \`);
+        await queryRunner.query(\`DROP TABLE "${tableName}";\`);
+        await queryRunner.query(\`ALTER TABLE "${tableName}_tmp" RENAME TO "${tableName}";\`);
+        `;
     }
 
     return {

@@ -62,7 +62,7 @@ export async function createMigration() {
         );
     }
 
-    const { file, name } = migrationFile.migrationTemplate(entitiesData);
+    const { file, name } = await migrationFile.migrationTemplate(entitiesData);
 
     fs.writeFileSync(
         path.resolve(process.cwd(), config.migrations.saveAt, `${name}.ts`),
@@ -87,6 +87,7 @@ export async function runMigration() {
             "FATAL: Le fichier de configuration magicorm.json est introuvable."
         );
     }
+
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
     if (!config.migrations?.readAt) {
@@ -95,22 +96,20 @@ export async function runMigration() {
         );
     }
 
-    const files = glob.sync(config.migrations.readAt, { cwd: process.cwd() });
+    const files = glob
+        .sync(config.migrations.readAt, { cwd: process.cwd() })
+        .filter((file) => file.endsWith(".js") || file.endsWith(".ts"));
 
     console.log(`🔍 Recherche avec le pattern : ${config.migrations.readAt}`);
     console.log(`📂 Répertoire courant : ${process.cwd()}`);
     console.log(`📋 Fichiers trouvés :`, files);
 
     const filteredFiles = files.sort((a, b) => {
-        const timestampA = parseInt(
-            a.split("/").pop()?.split(".")[0]?.replace("Version", "") || "0",
-            10
-        );
-        const timestampB = parseInt(
-            b.split("/").pop()?.split(".")[0]?.replace("Version", "") || "0",
-            10
-        );
-        return timestampA - timestampB;
+        const extractTimestamp = (filename: string) => {
+            const match = filename.match(/Version(\d{14})/);
+            return match ? parseInt(match[1], 10) : 0;
+        };
+        return extractTimestamp(a) - extractTimestamp(b);
     });
 
     console.log(`📦 Fichiers de migration triés :`, filteredFiles);
@@ -122,12 +121,22 @@ export async function runMigration() {
     }
 
     const latestMigration = filteredFiles[filteredFiles.length - 1];
-    const { default: MigrationClass } = await import(
-        path.resolve(process.cwd(), latestMigration)
-    );
-    const migrationInstance = new MigrationClass();
-    const magicRunner = MagicRunner.getInstance();
-    migrationInstance.up(magicRunner).then(() => {
+    console.log(`🚀 Exécution de la migration : ${latestMigration}`);
+
+    try {
+        const { default: MigrationClass } = await import(
+            path.resolve(process.cwd(), latestMigration)
+        );
+        const migrationInstance = new MigrationClass();
+        const magicRunner = MagicRunner.getInstance();
+
+        await migrationInstance.up(magicRunner);
         console.log(`✅ Migration exécutée avec succès : ${latestMigration}`);
-    });
+    } catch (error) {
+        console.error(
+            `❌ Erreur lors de l'exécution de la migration ${latestMigration} :`,
+            error
+        );
+        throw new InitError(`FATAL: Échec de l'exécution de la migration.`);
+    }
 }
